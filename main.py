@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 from random import choice, randint, shuffle
 import pyperclip
+import json
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 def generate_password():
@@ -24,19 +25,48 @@ def save_password():
     get_website = website_entry.get()
     get_pass = pass_entry.get()
     get_email = email_entry.get()
+    new_data = {
+        get_website: {
+            "email": get_email,
+            "password": get_pass
+        }
+    }
 
     if len(get_website) >0 and len(get_pass) > 0:
-        warning = messagebox.askokcancel(title=get_website, message=f"These are the details you entered:\nWebsite: {get_website}\nPassword: {get_pass}\nDo you wish to save this?")
-        if warning:
-            with open("data.text", "a") as file:
-                file.write(f"{get_website} | {get_email} | {get_pass}\n")
-                website_entry.delete(0, END)
-                pass_entry.delete(0, END)
+        try:
+            with open("data.json", "r") as file:
+                data = json.load(file)
+                data.update(new_data)
+        except FileNotFoundError:
+            with open("data.json", "w") as file:
+                json.dump(new_data, file, indent= 4)
         else:
+            with open("data.json", "w") as file:
+                json.dump(data, file, indent= 4)
+        finally:
             website_entry.delete(0, END)
             pass_entry.delete(0, END)
+
     else:
         messagebox.showwarning(title="Warning!!", message="Please don't leave any field empty")
+
+# ---------------------------- Password Search ------------------------------- #
+
+def search_pass():
+    website = website_entry.get()
+    try:
+        with open("data.json") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        messagebox.showerror(title="ERROR", message= "There is no data file saved yet")
+    else:
+        if website in data:
+            email = data[website]["email"]
+            password = data[website]["password"]
+            messagebox.showinfo(title= "Your credentials", message= f"Email: {email}\nPassword: {password}")
+        else:
+            messagebox.showerror(title="ERROR", message= f"You have not yet saved password for you {website} account")
+
 
 # ---------------------------- UI SETUP ------------------------------- #
 window = Tk()
@@ -57,11 +87,11 @@ email_label.grid(row=2, column=0)
 pass_label = Label(text="Password:")
 pass_label.grid(row=3, column=0)
 
-website_entry = Entry(width= 52)
+website_entry = Entry(width= 34)
 website_entry.focus()
-website_entry.grid(row=1, column=1, columnspan=2)
+website_entry.grid(row=1, column=1)
 
-email_entry = Entry(width= 52)
+email_entry = Entry(width= 53)
 email_entry.insert(END, string="maruf.bin.faruque.payel.1361@gmail.com")
 email_entry.grid(row=2, column=1, columnspan=2)
 
@@ -69,10 +99,13 @@ pass_entry = Entry(width= 34)
 pass_entry.grid(row=3, column=1)
 
 generate_btn = Button(text="Generate Password", command= generate_password)
-generate_btn.grid(row=3, column=2, columnspan=2)
+generate_btn.grid(row=3, column=2)
 
 add_btn = Button(text="Add", width= 45, command= save_password)
 add_btn.grid(row=4, column=1, columnspan=2)
+
+search_btn = Button(text= "Search", width= 15, command= search_pass)
+search_btn.grid(row=1, column=2)
 
 
 window.mainloop()
